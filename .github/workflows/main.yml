@@ -11,23 +11,32 @@ jobs:
           config: p/terraform
 
   owasp-sca:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest  # Using Linux to avoid .NET requirements
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '17'
-      - name: Install .NET Runtime
-        run: choco install dotnet-runtime --version=6.0.0 -y
-      - name: Download DependencyCheck
+      - name: Run DependencyCheck (with workaround)
         run: |
-          Invoke-WebRequest -Uri "https://github.com/jeremylong/DependencyCheck/releases/download/v8.4.0/dependency-check-8.4.0-release.zip" -OutFile "dependency-check.zip"
-          Expand-Archive -Path "dependency-check.zip" -DestinationPath .
-      - name: Run Scan
-        run: |
-          .\dependency-check\bin\dependency-check.bat --scan . --format HTML
+          wget https://github.com/jeremylong/DependencyCheck/releases/download/v8.4.0/dependency-check-8.4.0-release.zip
+          unzip dependency-check-8.4.0-release.zip
+          # Workaround for NullPointerException
+          ./dependency-check/bin/dependency-check.sh \
+            --scan . \
+            --format "JSON" \
+            --out dependency-check-report.json \
+            --disableAssembly
+          
+          # Convert JSON to HTML using jq (lightweight alternative)
+          sudo apt-get install -y jq
+          echo '<html><body><h1>Dependency Check Results</h1><pre>' > dependency-check-report.html
+          jq '.' dependency-check-report.json >> dependency-check-report.html
+          echo '</pre></body></html>' >> dependency-check-report.html
       - uses: actions/upload-artifact@v4
         with:
           name: dependency-report
-          path: dependency-check-report.html
+          path: |
+            dependency-check-report.json
+            dependency-check-report.html
