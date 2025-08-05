@@ -1,0 +1,27 @@
+name: Security Scans
+on: [push, pull_request]
+
+jobs:
+  semgrep-sast:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: returntocorp/semgrep-action@v1
+        with:
+          config: p/terraform
+
+  owasp-sca:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+      - run: |
+          wget https://github.com/jeremylong/DependencyCheck/releases/download/v8.4.0/dependency-check-8.4.0-release.zip
+          unzip dependency-check-8.4.0-release.zip
+          ./dependency-check/bin/dependency-check.sh --scan . --format HTML
+      - uses: actions/upload-artifact@v3
+        with:
+          name: dependency-report
+          path: dependency-check-report.html
