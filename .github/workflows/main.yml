@@ -11,7 +11,7 @@ jobs:
           config: p/terraform
 
   owasp-sca:
-    runs-on: windows-latest  # Changed to Windows runner
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v3
@@ -19,12 +19,14 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: Install .NET Runtime
+        run: choco install dotnet-runtime --version=6.0.0 -y
+      - name: Download DependencyCheck
         run: |
-          choco install dotnet-runtime --version=6.0.0 -y
-      - run: |
-          wget https://github.com/jeremylong/DependencyCheck/releases/download/v8.4.0/dependency-check-8.4.0-release.zip
-          unzip dependency-check-8.4.0-release.zip
-          ./dependency-check/bin/dependency-check.bat --scan . --format HTML
+          Invoke-WebRequest -Uri "https://github.com/jeremylong/DependencyCheck/releases/download/v8.4.0/dependency-check-8.4.0-release.zip" -OutFile "dependency-check.zip"
+          Expand-Archive -Path "dependency-check.zip" -DestinationPath .
+      - name: Run Scan
+        run: |
+          .\dependency-check\bin\dependency-check.bat --scan . --format HTML
       - uses: actions/upload-artifact@v4
         with:
           name: dependency-report
