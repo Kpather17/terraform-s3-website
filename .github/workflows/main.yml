@@ -16,12 +16,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v3
         with:
+          distribution: 'temurin'  # REQUIRED - specifies Java distribution
           java-version: '17'
       - run: |
           wget https://github.com/jeremylong/DependencyCheck/releases/download/v8.4.0/dependency-check-8.4.0-release.zip
           unzip dependency-check-8.4.0-release.zip
           ./dependency-check/bin/dependency-check.sh --scan . --format HTML
-      - uses: actions/upload-artifact@v4  # Updated from v3 to v4
+      - uses: actions/upload-artifact@v4
         with:
           name: dependency-report
           path: dependency-check-report.html
